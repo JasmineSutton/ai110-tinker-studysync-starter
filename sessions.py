@@ -7,6 +7,7 @@ still a hand-written class. Recurring sessions and time conflicts aren't
 detected yet.
 """
 
+from dataclasses import dataclass
 from datetime import date, timedelta
 
 FREQUENCY_DAYS = {"daily": 1, "weekly": 7}
@@ -25,6 +26,11 @@ class PlainSession:
 # TODO (Part 3): from dataclasses import dataclass, then define SessionDC as
 # a @dataclass with the same three fields as PlainSession: subject, minutes,
 # priority="medium".
+@dataclass
+class SessionDC:
+    subject: str
+    minutes: int
+    priority: str = "medium"
 
 
 def next_occurrence(last_date: date, frequency: str) -> date:
@@ -35,6 +41,7 @@ def next_occurrence(last_date: date, frequency: str) -> date:
     # TODO (Part 4): look up the day count for `frequency` in FREQUENCY_DAYS
     # and add that many days to last_date using timedelta.
     raise NotImplementedError
+    return last_date + timedelta(days=FREQUENCY_DAYS[frequency])
 
 
 def find_conflicts(sessions: list) -> list:
@@ -46,7 +53,12 @@ def find_conflicts(sessions: list) -> list:
     """
     # TODO (Part 4): implement without crashing on empty input. A simple
     # nested loop comparing each pair once is fine.
-    raise NotImplementedError
+    conflicts = []
+    for i in range(len(sessions)):
+        for j in range(i + 1, len(sessions)):
+            if sessions[i].get("slot") == sessions[j].get("slot"):
+                conflicts.append((sessions[i], sessions[j]))
+    return conflicts
 
 
 def render_session_log_tab():
@@ -62,9 +74,12 @@ def render_session_log_tab():
 
     # TODO (Part 1): initialize st.session_state.fixed_count once, then
     # increment it here instead of the broken counter above.
+    if "fixed_count" not in st.session_state:
+        st.session_state.fixed_count = 0
+
     if st.button("Log a session (fixed)"):
-        pass
-    st.metric("Sessions logged (fixed)", 0)  # TODO: display st.session_state.fixed_count.
+        st.session_state.fixed_count += 1
+    st.metric("Sessions logged (fixed)", st.session_state.fixed_count)
 
     st.divider()
     st.subheader("Part 2: Session List (with validation)")
@@ -79,6 +94,12 @@ def render_session_log_tab():
         # TODO (Part 2): reject an empty/whitespace-only subject and a
         # duration that isn't > 0. Show st.error(...) instead of appending.
         st.session_state.mini_sessions.append({"subject": subject, "duration": duration})
+        if not subject.strip():
+            st.error("Subject cannot be empty.")
+        elif duration <= 0:
+            st.error("Duration must be greater than 0.")
+        else:
+            st.session_state.mini_sessions.append({"subject": subject, "duration": duration})
 
     st.write(st.session_state.mini_sessions)
 
@@ -102,6 +123,9 @@ if __name__ == "__main__":
     print(plain)
     # TODO (Part 3): create a SessionDC with the same values and print it too --
     # compare the two __repr__ outputs and the amount of code each required.
+
+    dataclass_example = SessionDC("Study group: Calc II", 45, priority="high")
+    print(dataclass_example)
 
     print(next_occurrence(date(2026, 1, 1), "daily"))
     print(next_occurrence(date(2026, 1, 1), "weekly"))
